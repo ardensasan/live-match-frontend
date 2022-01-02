@@ -1,0 +1,1 @@
+export const API_DOMAIN = "https://live-match-api.vercel.app/"
