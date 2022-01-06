@@ -2,51 +2,49 @@ import axios from "axios";
 import { Fragment, useEffect, useState } from "react";
 import { API_DOMAIN } from "../../common/url";
 import TeamIcon from "../../components/TeamIcon";
-import { getTeamLogo } from "../../utils/request";
-
+import { formatDuration } from "../../utils/date";
+import Pusher from "pusher-js";
 const Match = () => {
-  const [matchList, setMatchList] = useState([]);
-  const getMatchList = async () => {
-    const {data} = await axios.get(`${API_DOMAIN}match/live`);
-    setMatchList(data);
+  const [matchList, setMatchList] = useState<Array<any>>([]);
+  const getLiveMatches = async () => {
+    await axios.get(`${API_DOMAIN}/match/live/`);
   };
 
   useEffect(() => {
-    getMatchList();
+    const pusher = new Pusher("2199e079bc9ad09b0c70", {
+      cluster: "ap1",
+    });
+
+    const matchChannel = pusher.subscribe("match-channel");
+    matchChannel.bind("get-live-matches", function (data: any) {
+      setMatchList(data.matchList);
+    });
+    getLiveMatches();
   }, []);
   return (
     <Fragment>
       <table>
         <tr>
-          <th>Dire</th>
-          <th>Players</th>
-          <th>Radiant</th>
-          <th>Players</th>
-          <th>Score</th>
+          <th>SD</th>
+          <th>D</th>
+          <th>Time</th>
+          <th>R</th>
+          <th>SR</th>
         </tr>
         {matchList.map((match: any) => {
           return (
             <tr>
-              <td>{match.dire_team?.team_name}<TeamIcon ugc_id={match.dire_team?.team_logo}/></td>
+              <td> {match.dire_score | 0}</td>
               <td>
-                {match.players
-                  .filter(({ team }: any) => team === 0)
-                  .map((player: any) => {
-                    return player.name;
-                  })}
+                {match.dire_team?.team_name}
+                <TeamIcon ugc_id={match.dire_team?.team_logo} />
               </td>
-              <td>{match.radiant_team?.team_name}<TeamIcon ugc_id={match.radiant_team?.team_logo}/></td>
+              <td>{formatDuration(parseFloat(match.duration))}</td>
               <td>
-                {match.players
-                  .filter(({ team }: any) => team === 1)
-                  .map((player: any) => {
-                    return player.name;
-                  })}
+                {match.radiant_team?.team_name}
+                <TeamIcon ugc_id={match.radiant_team?.team_logo} />
               </td>
-              <td>
-                Dire: {match.scoreboard?.dire.score}
-                Radiant: {match.scoreboard?.radiant.score}
-              </td>
+              <td>{match.radiant_score | 0}</td>
             </tr>
           );
         })}
